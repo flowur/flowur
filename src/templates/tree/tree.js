@@ -2,49 +2,39 @@ $(function() {
 /******************************************************
 *	Tree Visualization
 *
-*		chart: takes data
-*		container: the html element
-*		
-*	OPTIONAL PARAMETERS:
-*		maxNodeWidth
-*		nodeBuffer
-*		spacingX
-*		spacingY
-*
 ******************************************************/
 var treeMain = function (chart, container) {
 
 	TESTING = 1;
 
-	maxNodeWidth = 150;
-	nodeBuffer = 5;
-	spacingX = 20;
-	spacingY = 20;
+	var maxNodeWidth 	= 150;
+	var nodeBuffer 		= 5;
+	var spacingX 		= 20;
+	var spacingY 		= 20;
+	var testing 		= 0;
+	var title 			= chart.title;
+	var nodes 			= chart.nodes;
+	var arrows 			= chart.arrows;
+	var paths 			= [];
+	var stack 			= [];
 
-	windowWidth = $(container).width();
-	windowHeight = $(container).height();
+	var windowWidth 	= $(container).width();
+	var windowHeight 	= $(container).height();
 
-	var innerContainer = document.createElement('div');
+	var innerContainer 	= document.createElement('div');
 	container.appendChild(innerContainer);
 
 	$(innerContainer).width = windowWidth;
 	$(innerContainer).height = windowHeight;
 
-	windowWidth = 5000;
-	windowHeight = 5000;
+	//reuse variable to initialize large paper
+	windowWidth 		= 5000;
+	windowHeight 		= 5000;
 
 	var viewPaper = Raphael(innerContainer,windowWidth,windowHeight);
 	$(container).css(
 	    {'background-image': "url('noise_lines.png')"}
-	);
-
-	var testing = 0;
-	var title = chart.title;
-	var nodes = chart.nodes;
-	var arrows = chart.arrows;
-	var paths = [];
-	var stack = [];
-	
+	);	
 
 	/***********************************************
 	*	Initialize Tree Object and Helper functions
