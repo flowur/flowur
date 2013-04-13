@@ -149,9 +149,9 @@ var treeMain = function (chart, container) {
 	/***************************
 	*	Depth First Search
 	***************************/
-	var numbering = 1;
-	var parent = 0;
-	var start = Tree.getStart();
+	var numbering 	= 1;
+	var parent 		= 0;
+	var start 		= Tree.getStart();
 
 	//a starting node is required
 	if(typeof start === undefined) {
