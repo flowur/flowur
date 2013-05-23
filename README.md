@@ -20,7 +20,7 @@ The JSON markup consists of a title, nodes, and arrows. Nodes have an 'id', 'dat
 
 License
 =======
-Copyright (c) 2012, Flowur
+Copyright (c) 2013, Flowur
 All rights reserved.
 
 
