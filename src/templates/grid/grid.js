@@ -21,17 +21,30 @@ var GridApp = function (chart, inputBox ) {
 
 	Grid = {
 		'title': chart.title,
-		'nodes': []
+		'nodes': [],
+		'getNode': function (id) {
+			return _.find(this.nodes, function (node) {
+				return node.id == id;
+			});
+		},
+		getStart: function ( ) {
+			//temporary fix for:
+			//if (this.nodes[each].type === "start")
+			return _.find(this.nodes, function (node) {
+				return node.id == 0;
+			});
+		}
 	}
 	var buffer 		= 10;
 	var boxBuffer 	= 2;
-	var paths 		= [];
+	var paths 		= chart.arrows;
 	var stack 		= [];
 	var aColor 		= '#FF2C18';
 	var aFontFill 	= '#FFFFFF';
 	var qsColor 	= '#1ba1e2';
 	var qsFontFill 	= '#FFFFFF';
 	var fontSize 	= 0;
+	var found 		= 0;
 
 	/*
 	*	Chose nuberOf based on windowWidth, if windowWidth is negligable throw error 
@@ -39,7 +52,7 @@ var GridApp = function (chart, inputBox ) {
 	* 	?????
 	*/
 
-	numberOf = 12;
+	numberOf = 6;
 	smallestDimension = (windowWidth - (numberOf+2)*boxBuffer) / numberOf;
 	console.log('Smallest Dimension: '+ smallestDimension);
 	var boxSizes = [
@@ -50,20 +63,7 @@ var GridApp = function (chart, inputBox ) {
 			{'x': smallestDimension*4+boxBuffer*3, 'y': smallestDimension*4+boxBuffer*3 }
 	]
 
-	//REVISE linkage
-	/*
-	var checkForAdjacencies = function (node) {
-		var adjacencies = [];
-
-		_.each(arrows, function (arrow) {
-			if(node.id === arrow.from) {
-				var retrievedNode = Tree.getNode(arrow.to);
-				adjacencies.push(retrievedNode);				
-			}
-		});
-		return adjacencies;
-	}
-	*/
+	
 	
 	//Node initialization function
 	var Node = function (provDat) {
@@ -192,7 +192,14 @@ var GridApp = function (chart, inputBox ) {
 		this.getBottomLeft = function ( ) {
 			return { 'x': this.box.attr('x') , 'y': this.box.attr('y') + this.box.attr('height') };
 		}
-
+		this.checkForAdjacencies = (function ( ) {
+			_.each(paths, (function (path) {
+				console.log(this.id);
+				if(this.id === path.from) {
+					this.adjacent.push(Grid.getNode(path.to));
+				}
+			}).bind(this));
+		}).bind(this);
 	}
 
 	//initialization Loop
@@ -202,6 +209,13 @@ var GridApp = function (chart, inputBox ) {
 	});
 	//console.log(Grid);
 
+	//REVISE linkage
+
+	
+	_.each(Grid.nodes, function(node, key){
+	    node.checkForAdjacencies();
+	    console.log(node.adjacent);
+	});
 
 	//Layout procedure
 
@@ -264,7 +278,6 @@ var GridApp = function (chart, inputBox ) {
 		});
 	}
 
-	var found = 0;
 
 	_.each(Grid.nodes, function (node) {
 		//find next zone that fits width
@@ -323,6 +336,25 @@ var GridApp = function (chart, inputBox ) {
 		}
 	});
 	paper.setSize(windowWidth,maxDepth);
+	
+	// var start = function (node) {
+	// 	// Remove all effects
+	// 	// Add effects to node
+	// 	_.each(node.adjacent, function(adj, key){
+	// 		// add effect to adjacent
+	// 		// add click functions to adjacent
+	// 	});
+	// }
+
+	// var radius = 75;
+	// paper.circle(windowWidth / 2, windowHeight / 2, radius).attr({
+	// 	'stroke': 'white',
+	// 	'stroke-width': 3,
+	// 	'fill': '#999999'
+	// }).click( function ( ) {
+	// 	this.remove();
+	// 	start();
+	// });
 
 }
 

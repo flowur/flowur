@@ -6,12 +6,16 @@ $(function() {
 var treeMain = function (chart, container) {
 
 	TESTING = 1;
-	TESTING2 = 0;
+	TESTING2 = 1;
 
 	var maxNodeWidth 	= 150;
 	var nodeBuffer 		= 5;
 	var spacingX 		= 20;
 	var spacingY 		= 20;
+	var aColor 			= '#FF2C18';
+	var aFontFill 		= '#FFFFFF';
+	var qsColor 		= '#FFFFFF';
+	var qsFontFill 		= '#999999';
 	var title 			= chart.title;
 	var nodes 			= chart.nodes;
 	var arrows 			= chart.arrows;
@@ -51,10 +55,9 @@ var treeMain = function (chart, container) {
 		getStart: function ( ) {
 				//temporary fix for:
 				//if (this.nodes[each].type === "start")
-			var temp = _.find(this.nodes, function (node) {
+			return _.find(this.nodes, function (node) {
 				return node.id == 0;
 			});
-			return temp;
 		},
 		printPrePost: function ( ) {
 			this.nodes = _.sortBy(this.nodes, function (node) { 
@@ -131,15 +134,33 @@ var treeMain = function (chart, container) {
 		this.zoneXpos 	= 0;
 		this.xCurrent 	= 0;
 		this.used 		= 0;
-		this.designBox 	= viewPaper.rect(0,0,0,0);
-		this.textBox	= viewPaper.text(0,0).attr(
-			{
+		this.designBox 	= viewPaper.rect(0,0,0,0).attr({
+					'fill': qsColor,
+					'stroke': '#999999', 
+					'stroke-width': .5, 
+					'stroke-linecap': "square"
+		});
+		this.textBox	= viewPaper.text(0,0).attr({
 					'text-anchor': 'start',
 				 	'font-family': "Helvetica Neue",
 					'font-weight': 100,
-					'fill': 'black',
+					'fill': qsFontFill,
 					'font-size': 18
-			});
+		});
+		this.setX = function (x) {
+			this.designBox.attr({'x': x - this.designBox.attr('width') / 2});
+			var offset = ( this.designBox.attr('width') - this.textBox.getBBox().width ) / 2;
+			this.textBox.attr({'x': this.designBox.attr('x') + offset });
+		}
+		this.setY = function (y) {
+
+			this.designBox.attr({'y': y});
+
+			var halfTextHeight 	= this.textBox.getBBox().height / 2;
+			var vertCenter 		= ( this.designBox.attr('height') - this.textBox.getBBox().height ) / 2;
+
+			this.textBox.attr({'y': y+halfTextHeight+vertCenter});
+		}
 	}
 	_.each(nodes, function (node) {
 		Tree.nodes.push(new Node(node));
@@ -185,31 +206,19 @@ var treeMain = function (chart, container) {
 	Tree.getLayers();
 	
 	var maxTextWidth 	= maxNodeWidth - nodeBuffer*2;
-	var aColor 			= '#FF2C18';
-	var aFontFill 		= '#FFFFFF';
-	var qsColor 		= '#FFFFFF';
-	var qsFontFill 		= '#999999';
 	var currentY 		= 0;
 
-	/******************************************************
-	*	Calculate Node and Layer Graphical Information
-	*
-	*		each nodes:
-	*			textWidth & height based on maxNodeWidth
-	*		each layers:
-	*			layer height
-	*			( maxTextHeight+nodeBuffer = layerHeight )
-	******************************************************/
-
-	// Initialize title, moved later based on center of chart
-	Tree.title = viewPaper.text(0,0).attr(
-		{	
-			'text': title,'text-anchor': 'start',
-		 	'font-family': "Helvetica Neue",
-			'font-weight': 100,
-			'fill': qsFontFill,
-			'font-size': 80
-		});
+	/**
+	 * Initialize title, moved later based on center of chart
+	 * 
+	 */
+	Tree.title = viewPaper.text(0,0).attr({	
+		'text': title,'text-anchor': 'start',
+	 	'font-family': "Helvetica Neue",
+		'font-weight': 100,
+		'fill': qsFontFill,
+		'font-size': 80
+	});
 
 	//move the y-tracker down based on title height
 	currentY += Tree.title.getBBox().height + spacingY*4;
@@ -221,7 +230,8 @@ var treeMain = function (chart, container) {
 		//initialize layer width to total spacing required
 		layer.width = ( ( layer.length - 1 ) * spacingX );
 
-			//for each node in the layer
+			// For each node in the layer
+			// rework text to fit inside optimal text box.
 			_.each(layer, function (node) {
 
 				var content 	= node.data;
@@ -259,14 +269,35 @@ var treeMain = function (chart, container) {
 			  node.layerHeight = greatestTextHeightInLayer + nodeBuffer*2;
 			  node.layerStartY = currentY;
 			})
+
 		layer.height 	= greatestTextHeightInLayer + nodeBuffer*2;
 		layer.startY 	= currentY;
 		currentY 		+= (layer.height + spacingY);
+		/**
+		 * Bus holds horizontal arrows routing for non tree edges.
+		 * Bus is defined as a vertical range where nothing else 
+		 * can be drawn.
+		 * @type {Object}
+		 */
+		layer.bus 		= {
+			'topY': 	currentY - spacingY,
+			'bottomY': 	currentY,
+			'addLine': 	function( ) {
+				// shifts everything below down
+				// add code...
+			}
+		}
+		console.log(layer.bus);
 
 	});
 
 
-	//Creates a width for each node's zone
+	/**
+	 * Creates a width for each node's zone.
+	 * 
+	 * @param  {object} node
+	 * @return {number}	node.zone
+	 */
 	var initZone = function (node) {
 		node.zone = 0;
 		_.each(node.adjacent, function (adj) {
@@ -279,8 +310,13 @@ var treeMain = function (chart, container) {
 		return node.zone;
 	}	
 
-	//incase zone space is not all allocated to adjacent nodes
-	//the space is then distributed evenly between adjacencies 
+	/**
+	 * Incase zone space is not all allocated to adjacent nodes 
+	 * the space is then distributed evenly between adjacencies.
+	 * 
+	 * @param  {object} node
+	 *
+	 */
 	var zoneBalancer = function (node) {
 
 		var totalAdjZones = 0;
@@ -295,7 +331,7 @@ var treeMain = function (chart, container) {
 
 			//distribute it evenly
 			_.each(node.adjacent, function (adj) {
-				 adj.zone = newZoneSize;
+				adj.zone = newZoneSize;
 				zoneBalancer(adj);
 			});
 		}
@@ -341,44 +377,20 @@ var treeMain = function (chart, container) {
 			node.xCurrent = node.zoneXpos;
 		}
 
-		node.textBox.attr({ 
-			'x': node.zoneXpos + node.zone / 2 + nodeBuffer
-						 - node.designBox.attr('width') / 2, 
-			'y': node.layerStartY
-						 + node.textBox.getBBox().height / 2 + nodeBuffer,
-			'fill': qsFontFill
-		});
+		node.setX(node.zoneXpos+node.zone/2);
+		node.setY(node.layerStartY);		
 		
 		if(TESTING2) {
-		viewPaper.rect(
-			node.zoneXpos + node.zone / 2 + nodeBuffer
-						 - node.designBox.attr('width') / 2, 
-			node.layerStartY,
-			2,
-			node.layerHeight
-			);
-		viewPaper.text(	node.zoneXpos + node.zone / 2 + nodeBuffer
-						 - node.designBox.attr('width') / 2, 
-			node.layerStartY).attr({'text': node.layerHeight+', layer: '+node.layer });
+			viewPaper.text(	node.zoneXpos + node.zone / 2 + nodeBuffer
+							 - node.designBox.attr('width') / 2, 
+				node.layerStartY).attr({'text': node.zoneXpos+', to: '+(node.zoneXpos+node.zone) });
 		}
 
-		node.designBox.attr({
-			'x': node.zoneXpos + node.zone / 2  
-						- node.designBox.attr('width') / 2,
-			'y': node.layerStartY
-		}).attr({
-			'fill': qsColor,
-			'stroke': '#999999', 
-			'stroke-width': .5, 
-			'stroke-linecap': "square"
-		}).toBack();
+		node.designBox.toBack();
 
-		//TESTING CODE BELOW
 		if(TESTING2) {
-		viewPaper.rect(node.zoneXpos + 2,Tree.layers[node.layer].startY,node.zone - 4,1);
-		viewPaper.rect(node.zoneXpos+node.zone / 2,Tree.layers[node.layer].startY,1,4); 
-		viewPaper.rect(node.textBox.getBBox().x,node.textBox.getBBox().y,5,5); 
-		viewPaper.rect(node.designBox.attr('x'),node.designBox.attr('y'),5,5); 
+			viewPaper.rect(node.zoneXpos + 2,Tree.layers[node.layer].startY,node.zone,node.layerHeight).attr({'stroke': 'red'});;
+			viewPaper.rect(node.zoneXpos+node.zone / 2,Tree.layers[node.layer].startY,1,4).attr({'stroke': 'red'});; 
 		}
 		_.each(node.adjacent, function (adj) {
 			setNodePositions(adj);
@@ -441,13 +453,23 @@ var treeMain = function (chart, container) {
 			var pathStartX, pathStartY, pathTurn1X, pathTurn1Y, 
 				pathTurn2X, pathTurn2Y, pathEndX, pathEndY;
 
+			//starts center of from node
 			pathStartX 	= fromNode.designBox.attr('x') 
 							+ fromNode.designBox.attr('width') / 2;
-			pathStartY 	= fromNode.designBox.attr('y') 
+			pathStartY 	= fromNode.designBox.attr('y'); 
 							+ fromNode.designBox.attr('height') / 2;
+
+			// extends to center of bus zone below of above depending
+			// on orientation of toNode relative to fromNode
 			pathTurn1X 	= pathStartX;
-			pathTurn1Y 	= fromNode.designBox.attr('y') 
-							+ fromNode.designBox.attr('height') / 2;
+			pathTurn1Y 	= fromNode.designBox.attr('y');
+			toNode.layer > fromNode.layer ? 
+				pathTurn1Y += fromNode.layerStartY + fromNode.layerHeight 
+								+ nodeBuffer / 2: 
+				pathTurn1Y -= fromNode.designBox.attr('height') / 2 
+								- nodeBuffer / 2;
+
+			//check if fromNode's parent 
 			pathTurn2X 	= toNode.designBox.attr('x') 
 							+ toNode.designBox.attr('width') / 2;
 			pathTurn2Y 	= pathTurn1Y;
@@ -469,7 +491,7 @@ var treeMain = function (chart, container) {
 			fromNode.paths.push(newPath);
 		}
 	});
-	
+
 	_.each(Tree.nodes, function (node) {
 		//set background
 

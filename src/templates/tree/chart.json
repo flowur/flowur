@@ -56,6 +56,15 @@
     }, {
         "id": 22,
         "data": "Call the Eagles!"
+    }, {
+        "id": 23,
+        "data": "A Third node!"
+    }, {
+        "id": 24,
+        "data": "A fourth really full of text so much text here, alot of text node!"
+    }, {
+        "id": 25,
+        "data": "Another node over here just to test things out."
     }],
     "arrows": [{
         "id": 1,
@@ -128,7 +137,7 @@
     }, {
         "id": 25,
         "from": 21,
-        "to": 22
+        "to": 4
     }, {
         "id": 26,
         "from": 13,
@@ -137,6 +146,22 @@
         "id": 26,
         "from": 7,
         "to": 22
+    }, {
+        "id": 27,
+        "from": 18,
+        "to": 23
+    }, {
+        "id": 28,
+        "from": 18,
+        "to": 24
+    }, {
+        "id": 29,
+        "from": 4,
+        "to": 25
+    }, {
+        "id": 30,
+        "from": 22,
+        "to": 19
     }],
     "title": "Gandalf Problem Solving"
 }
